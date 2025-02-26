@@ -1,0 +1,31 @@
+"Automation step by step" "dockerfile > docker image > docker container"
+
+Once you have a Dockerfile, you can use that to create a Docker image which will then be used to run a Docker container.
+A Dockerfile is a set of instructions used to create a Docker image needed for a Docker container. That application will later be
+accessible through a web browser.
+
+First thing we need to do is create a dir, cd to that dir, and create an index.html with an "Hello world" message, then we create
+the Dockerfile:
+
+<Dockerfile>
+# using the nginx base image
+FROM nginx
+# updates the index.html with the one we just created
+COPY index.html /usr/share/nginx/html
+
+By running the docker image created by the dockerfile a docker container will be created.
+
+So, let's start docker and build the docker image from the dockerfile:
+$docker build -t new_app .
+This command must be run in the folder containing the dockerfile.
+If the command run succesfully, running:
+$docker images
+Will print a new image ID with the name "new_app".
+To run the docker container from the image:
+$docker run -p 8080:80 new_app
+-p 8080:80 maps the port, so the local port 8080 will be in a connection with port 80 of the container; this means we can access
+the application by visiting localhost::8080. The command will NOT launch the container in detached mode. This means once we launch
+the command we will be inside the container. So just add -d to the last command. By doing that and running $docker ps this will
+show the docker is currently running. NOW you can run:
+$curl http://localhost:8080
+This is going to print Hello World on the standard output. You can also check with $netstat -lntu, port 8080 will be open.

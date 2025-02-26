@@ -1,0 +1,109 @@
+"The difference between a forward and reverse proxy is subtle but important. A simplified way to sum it up would be to say that
+a forward proxy sits in front of a client and ensures that no origin server ever communicates directly with that specific client.
+On the other hand, a reverse proxy sits in front of an origin server and ensures that no client ever communicates directly with that origin server."
+
+nginx serves several purposes but it mainly prevents clients to communicate directly with web servers behind nginx, which will
+speak to those services on behalf of clients and will send back the results.
+
+https://docs.nginx.com/nginx/admin-guide/basic-functionality/managing-configuration-files/
+
+nginx.conf is usually in one of these directories by default: /usr/local/nginx/conf, /etc/nginx (*), or /usr/local/etc/nginx.
+The NGINX configuration file is made of "directives" and their parameters. Single line directives end with a ";" but there are
+"containers" as well that group related directives through "{}".
+
+The so called "contexts" group together directives that apply to different traffic types:
+    events – General connection processing
+    http – HTTP traffic
+    mail – Mail traffic
+    stream – TCP and UDP traffic
+
+In each of these contests one or more "server" can be defined, these virtual servers will handle requests. For HTTP traffic, 
+every server controls the processing of requests for resources located at some domains/ip addresses. "location" contexts inside
+a server context define how to process "URIs". But what is a URI?
+
+https://www.techtarget.com/whatis/definition/URI-Uniform-Resource-Identifier
+
+URI stands for Uniform Resource Identifier and it's a character sequence which identifies a physical or abstract resource,
+usually accessible through internet. It distinguishes one resource from another.
+Thanks to URIs, internet protocols facilitate the interaction between those resources. These strings of characters are needed to 
+retrieve informations like paths, they may also be empty.
+
+A URL or Uniform Resource Locator (or web address) is the most common form of URI: these are used to unambigously identify and
+locate websites or other resources connected to the internet.
+
+The main advantage of a URI is different types of resource identifiers can be used regardless of the mechanism that will be used
+to access those resources. They can identify many things, such as images, electronic documents, webpages and so on.
+The URI definition can be found in RFC 3986.
+      Generic syntax of an URI
+[//[user:password@]host[:port]][/]path[?query][#fragment]
+
+https://docs.nginx.com/nginx/admin-guide/web-server/serving-static-content/
+
+It is time to find out how nginx can serve static content, define which path to search depending on the request and set up index files.
+
+The "root" directive specifies the root directory that will be used to search for a file. To obtain the path of a requested file
+NGINX appends the request URI to the path specified by root. In the following example the root directory applies to every location
+for this virtual server (except for when the root directory is used a second time to "override" the root):
+
+server {
+    root /www/data;
+
+    location / {
+    }
+
+    location /images/ {
+    }
+
+    location ~ \.(mp3|mp4) {
+        root /www/media;
+    }
+}
+
+NGINX will search for a URI that starts with /images/ inside the /www/data/images/ folder in the file system. If the URI ends with
+the "mp3" or "mp4" extension it will search for it inside /www/data/media/.
+If a request ends with a slash it will be treated as a request for a directory and NGINX will look for an "index.html" file by
+default. So if a request URI is /images/some/path NGINX will look for /www/data/images/some/path/index.html and deliver it back
+if it exists. If it does not NGINX will return by default HTTP code 404 (Not Found) by default.
+The "index" directive can list more than one filename that will be searched and returned by NGINX. The first file found will be
+the one returned.
+
+location / {
+    index index.$geo.html index.htm index.html;
+}
+
+To return the index file NGINX makes an internal redirect by appending the name of the file it found to the base URI, so the search
+continues and can end up in another location like in this one example:
+
+location / {
+    root /data;
+    index index.html index.php;
+}
+
+location ~ \.php {
+    fastcgi_pass localhost:8000;
+    #...
+}
+
+So if the URI request is /path/ however /data/path/index.html does not exist, NGINX will look for /data/path/index.php and if it is found
+an "internal redirection" will take place and the given request will therefore be proxied.
+
+The "try_files" directive is used to check if the requested directory or file exists; NGINX will make an internal redirect if it
+does or return a status code. In the following example "try_files" is used with the variable "$uri" to check for the existence
+of a file:
+
+server {
+    root /www/data;
+
+    location /images/ {
+        try_files $uri /images/default.gif;
+    }
+}
+
+If the file corresponding to the original URI does not exist NGINX makes a redirection to /www/data/images/default.gif. The last
+parameter can also be a status code that will be returned if the file/s are not found:
+
+location / {
+    try_files $uri $uri/ $uri.html =404;
+}
+
+NGINX can also optimize websites performances.
